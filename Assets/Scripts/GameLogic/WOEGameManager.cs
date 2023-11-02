@@ -7,9 +7,6 @@
  * 
  **********************************************/
 
-// Host draw card ok update ok, Client no ok, seems like it tried to initiate the card template but can't find model...
-// Seem's like the problem is with .Spawn() and ClientRpc, try check other's code tmr
-
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;

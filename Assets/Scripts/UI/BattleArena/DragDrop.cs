@@ -19,12 +19,14 @@ public class DragDrop : NetworkBehaviour
 
     private bool isDragging = false;
     private bool isDroppable = false;
-    private Vector2 startPosition;
-    private Transform startParent;
+    private Transform startParent = null;
 
     private void Update()
     {
-        if(isDragging)
+        // Return if not owning the card
+        if (!IsOwner) return;
+
+        if (isDragging)
         {
             Drag();
         }
@@ -60,12 +62,13 @@ public class DragDrop : NetworkBehaviour
     // Being called at CardTemplate prefab EventTrigger on Start Drag
     public void StartDrag()
     {
+        // Return if not owning the card
+        if (!IsOwner) return;
+
         // Set start parent/position in case we want to return the card to it's original place
-        // (When the card is not droppable)
-        if(transform.parent != WOEGameManager.Instance.dropZone)
+        if (!startParent)
         {
             startParent = transform.parent;
-            startPosition = transform.localPosition;
         }
         
         // Start Drag() function
@@ -75,6 +78,9 @@ public class DragDrop : NetworkBehaviour
     // Drag card (being called in Update)
     private void Drag()
     {
+        // Return if not owning the card
+        if (!IsOwner) return;
+
         // Set the card position according to player's mouse position
         transform.position = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
 
@@ -85,6 +91,10 @@ public class DragDrop : NetworkBehaviour
     // Being called at CardTemplate prefab EventTrigger on End Drag
     public void EndDrag()
     {
+        // Return if not owning the card
+        if (!IsOwner) return;
+
+        // Reset isDragging
         isDragging = false;
         
         // If the card is over the drop zone
@@ -100,7 +110,6 @@ public class DragDrop : NetworkBehaviour
         {
             // Return the card back to the original parent
             transform.SetParent(startParent, false);
-            transform.position = startPosition;
         }
     }
 }
