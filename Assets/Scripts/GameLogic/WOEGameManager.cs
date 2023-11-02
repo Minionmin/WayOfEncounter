@@ -19,7 +19,7 @@ using UnityEngine;
 
 public class WOEGameManager : NetworkBehaviour
 {
-    // GameObject name (String)
+    // UI name (String)
     private const string MAIN_CANVAS = "MainCanvas";
     private const string BACKGROUND = "Background";
     private const string PLAYER_CHARACTER = "PlayerCharacter";
@@ -183,6 +183,12 @@ public class WOEGameManager : NetworkBehaviour
         {
             // Set instantiated card's parent to enemy hand
             cardTransform.SetParent(enemyHand);
+
+            // Also set card back cover if it is in enemy hand
+            cardTemplateComponent.GetCardBackImage().gameObject.SetActive(true);
+
+            // Hide card value (right now value's UI is out of card cover)
+            cardTemplateComponent.GetCardValueTransform().gameObject.SetActive(false);
         }
 
         // To prevent new parent local position messing up our card local position
@@ -192,7 +198,7 @@ public class WOEGameManager : NetworkBehaviour
         cardTransform.localScale = Vector3.one;
 
         // Remove the last card (drawn card) from the deck locally (On both clients)
-        Invoke(nameof(RemoveDrawnCard), 0.5f);
+        Invoke(nameof(RemoveDrawnCard), 0.2f);
     }
     // ******************* Draw card *******************
 

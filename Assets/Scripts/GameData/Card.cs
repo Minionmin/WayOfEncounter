@@ -6,9 +6,9 @@ using UnityEngine.UI;
 [CreateAssetMenu(fileName = "PlayCard", menuName = "Data/Create a new card")]
 public class Card : ScriptableObject
 {
+    public int value;
     public string cardName;
     public string cardType;
-    public Sprite cardSprite;
     public string cardDescription;
-    public int value;
+    public Sprite cardSprite;
 }

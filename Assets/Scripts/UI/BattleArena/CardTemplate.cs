@@ -11,8 +11,9 @@ public class CardTemplate : MonoBehaviour
     [SerializeField] private TextMeshProUGUI cardValueLabel;
     [SerializeField] private TextMeshProUGUI cardDescLabel;
     [SerializeField] private Image cardImage;
+    [SerializeField] private Image cardBackImage;
+    [SerializeField] private Transform cardValueTransform;
 
-    // will create owner later after touching Network stuff
 
     // Setter for each individual card information
     public void InitializeCardInformation(string cardName_in, string cardValue_in, string cardDesc_in, Sprite cardSprite_in)
@@ -21,5 +22,15 @@ public class CardTemplate : MonoBehaviour
         cardValueLabel.text = cardValue_in;
         cardDescLabel.text = cardDesc_in;
         cardImage.sprite = cardSprite_in;
+    }
+
+    public Image GetCardBackImage()
+    {
+        return cardBackImage;
+    }
+
+    public Transform GetCardValueTransform()
+    {
+        return cardValueTransform;
     }
 }

@@ -71,6 +71,8 @@ MonoBehaviour:
   cardValueLabel: {fileID: 5272668922535067869}
   cardDescLabel: {fileID: 5917828363638335983}
   cardImage: {fileID: 6457846952827277601}
+  cardBackImage: {fileID: 5808859654652284020}
+  cardValueTransform: {fileID: 6340302027402373019}
 --- !u!114 &8978546859703360698
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -274,7 +276,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1159683250388523059
 RectTransform:
   m_ObjectHideFlags: 0
@@ -322,7 +324,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b66cc5695307e354c8d7e4cd82a81726, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 33db7d07a69234741afa447bff1c10d3, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
