@@ -15,6 +15,10 @@ using UnityEngine;
 
 public class PlayerNetwork : NetworkBehaviour
 {
+
+    [SerializeField] private Transform gameManagerTemplate;
+    private Transform gameManager = null;
+
     // All NetworkVariable must be initialized
 
     // ******************* Player's variable *******************
@@ -27,6 +31,8 @@ public class PlayerNetwork : NetworkBehaviour
 
     private void Awake()
     {
+        // So this doesn't get destroyed from Lobby scene
+        DontDestroyOnLoad(this);
     }
 
     // Use instead of Start() for online stuff
@@ -63,6 +69,12 @@ public class PlayerNetwork : NetworkBehaviour
         // Cannot process if you are not player's owner
         if(!IsOwner) return;
 
+        if (Input.GetKeyUp(KeyCode.S))
+        {
+            // Press S to draw a card
+            SpawnGameManagerServerRpc();
+        }
+
         if (Input.GetKeyUp(KeyCode.D))
         {
             // Press D to draw a card
@@ -83,6 +95,13 @@ public class PlayerNetwork : NetworkBehaviour
     public ulong GetPlayerNetworkID()
     {
         return playerNetworkID.Value;
+    }
+
+    [ServerRpc]
+    private void SpawnGameManagerServerRpc()
+    {
+        gameManager = Instantiate<Transform>(gameManagerTemplate, Vector3.zero, Quaternion.identity);
+        gameManager.GetComponent<NetworkObject>().Spawn(true);
     }
 
 }

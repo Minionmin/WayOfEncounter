@@ -61,6 +61,9 @@ public class WOEGameManager : NetworkBehaviour
     {
         Instance = this;
 
+        // So this doesn't get destroyed from Lobby scene
+        DontDestroyOnLoad(this);
+
         // Initilizing UI reference variables
         mainCanvas = GameObject.Find(MAIN_CANVAS).transform;
         background = mainCanvas.Find(BACKGROUND);
