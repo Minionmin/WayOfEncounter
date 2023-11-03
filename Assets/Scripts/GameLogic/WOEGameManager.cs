@@ -36,6 +36,10 @@ public class WOEGameManager : NetworkBehaviour
     [SerializeField] private List<Deck> decks;
     public List<Card> deck;
 
+    // Cards in each player hand
+    private List<ulong> hostCards { get; set; }
+    private List<ulong> clientCards { get; set; }
+
     // Main Canvas UI's parts
     public Transform mainCanvas { get; private set; }
     public Transform background { get; private set; }
@@ -93,7 +97,8 @@ public class WOEGameManager : NetworkBehaviour
             GetPlayerRefClientRpc();
         };
 
-
+        hostCards = new List<ulong>();
+        clientCards = new List<ulong>();
     }
 
     // ******************* Random a deck to play *******************
@@ -137,6 +142,16 @@ public class WOEGameManager : NetworkBehaviour
 
         // Make spawned card appeared on the network and assigned ownership
         cardNetworkObject.SpawnWithOwnership(drawPlayerID);
+
+        // Update corresponding player hand that is being managed by game manager
+        if (drawPlayerID == 0)
+        {
+            hostCards.Add(cardNetworkObject.NetworkObjectId);
+        }
+        else if (drawPlayerID == 1)
+        {
+            clientCards.Add(cardNetworkObject.NetworkObjectId);
+        }
 
         // Update card information
         DrawClientRpc(serverRpcParams.Receive.SenderClientId, cardNetworkObject.NetworkObjectId);
@@ -233,6 +248,16 @@ public class WOEGameManager : NetworkBehaviour
         }
     }
     // ******************* Update player HP *******************
+
+
+
+    // ******************* Update card position *******************
+    /*[ServerRpc]
+    private void PlaceCardAtServerRpc(Transform placeAt)
+    {
+        
+    }*/
+    // ******************* Update card position *******************
 
 
     private void RemoveDrawnCard()

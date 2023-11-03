@@ -16,8 +16,8 @@ using UnityEngine;
 public class PlayerNetwork : NetworkBehaviour
 {
 
-    [SerializeField] private Transform gameManagerTemplate;
-    private Transform gameManager = null;
+    //[SerializeField] private Transform gameManagerTemplate;
+    //private Transform gameManager = null;
 
     // All NetworkVariable must be initialized
 
@@ -69,11 +69,13 @@ public class PlayerNetwork : NetworkBehaviour
         // Cannot process if you are not player's owner
         if(!IsOwner) return;
 
+        /*
         if (Input.GetKeyUp(KeyCode.S))
         {
             // Press S to draw a card
             SpawnGameManagerServerRpc();
         }
+        */
 
         if (Input.GetKeyUp(KeyCode.D))
         {
@@ -97,11 +99,12 @@ public class PlayerNetwork : NetworkBehaviour
         return playerNetworkID.Value;
     }
 
+    /*
     [ServerRpc]
     private void SpawnGameManagerServerRpc()
     {
         gameManager = Instantiate<Transform>(gameManagerTemplate, Vector3.zero, Quaternion.identity);
         gameManager.GetComponent<NetworkObject>().Spawn(true);
     }
-
+    */
 }
