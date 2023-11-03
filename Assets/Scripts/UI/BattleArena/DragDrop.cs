@@ -14,6 +14,9 @@ using UnityEngine;
 
 public class DragDrop : NetworkBehaviour
 {
+    /// <summary> Player's network ID that will be used to get player reference in WOEGameManager.cs </summary>
+    public NetworkVariable<ulong> cardNetworkID = new NetworkVariable<ulong>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     // Prevent mistyping in the future
     private const string DROPZONE_TAG = "DropZone";
 
@@ -57,6 +60,11 @@ public class DragDrop : NetworkBehaviour
         {
             isDroppable = false;
         }
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        cardNetworkID.Value = gameObject.GetComponent<NetworkObject>().NetworkObjectId;
     }
 
     // Being called at CardTemplate prefab EventTrigger on Start Drag
@@ -104,6 +112,8 @@ public class DragDrop : NetworkBehaviour
             transform.SetParent(WOEGameManager.Instance.dropZoneContainer, false);
             transform.localPosition = Vector3.zero;
             transform.localScale = Vector3.one;
+
+            WOEGameManager.Instance.Notify_PlaceCardAtServerRpc(cardNetworkID.Value, WOEGameManager.Instance.dropZoneContainer.gameObject);
         }
         // If the card is not in the drop zone
         else

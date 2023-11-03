@@ -252,11 +252,31 @@ public class WOEGameManager : NetworkBehaviour
 
 
     // ******************* Update card position *******************
-    /*[ServerRpc]
-    private void PlaceCardAtServerRpc(Transform placeAt)
+    [ServerRpc(RequireOwnership = false)]
+    public void Notify_PlaceCardAtServerRpc(ulong cardID, NetworkObjectReference placeAt)
     {
-        
-    }*/
+        PlaceCardAtClientRpc(cardID, placeAt);
+    }
+
+    [ClientRpc]
+    private void PlaceCardAtClientRpc(ulong cardID_in, NetworkObjectReference placeAt)
+    {
+        if (placeAt.TryGet(out NetworkObject placeObject))
+        {
+            Transform targetPlace = placeObject.transform;
+
+            if (targetPlace != null)
+            {
+                Debug.Log(cardID_in + " " + targetPlace.name);
+            }
+        }
+
+        /*
+        foreach(var cardID in hostCards)
+        {
+            Debug.Log(cardID);
+        }*/
+    }
     // ******************* Update card position *******************
 
 
