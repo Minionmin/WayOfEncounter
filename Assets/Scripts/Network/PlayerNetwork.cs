@@ -99,6 +99,16 @@ public class PlayerNetwork : NetworkBehaviour
         return playerNetworkID.Value;
     }
 
+    public int SetPlayerMaxHP(int val)
+    {
+        return playerMaxHP.Value = val;
+    }
+
+    public int SetPlayerHP(int val)
+    {
+        return playerHP.Value = val;
+    }
+
     /*
     [ServerRpc]
     private void SpawnGameManagerServerRpc()

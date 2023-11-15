@@ -143,6 +143,23 @@ public class WOEGameManager : NetworkBehaviour
         // Make spawned card appeared on the network and assigned ownership
         cardNetworkObject.SpawnWithOwnership(drawPlayerID);
 
+        // Update card information
+        DrawClientRpc(drawPlayerID, cardNetworkObject.NetworkObjectId);
+    }
+
+    // Putting drawing logic in Client side will make both players draw through 1 server request
+    // Which will cause unintentional result when drawing a card (Both players will draw once which is not what we wanted)
+    // Server -> Clients
+    // Draw a card -> Put the card in the corresponding player's hand -> remove it from the cards list (deck)
+    [ClientRpc]
+    private void DrawClientRpc(ulong drawPlayerID, ulong objectID)
+    {
+        // Get spawned card network object by using passed objectID
+        NetworkObject cardNetworkObject = NetworkManager.Singleton.SpawnManager.SpawnedObjects[objectID];
+
+        // Get transform of the spawned card
+        Transform cardTransform = cardNetworkObject.transform;
+
         // Update corresponding player hand that is being managed by game manager
         if (drawPlayerID == 0)
         {
@@ -152,23 +169,6 @@ public class WOEGameManager : NetworkBehaviour
         {
             clientCards.Add(cardNetworkObject.NetworkObjectId);
         }
-
-        // Update card information
-        DrawClientRpc(serverRpcParams.Receive.SenderClientId, cardNetworkObject.NetworkObjectId);
-    }
-
-    // Putting drawing logic in Client side will make both players draw through 1 server request
-    // Which will cause unintentional result when drawing a card (Both players will draw once which is not what we wanted)
-    // Server -> Clients
-    // Draw a card -> Put the card in the corresponding player's hand -> remove it from the cards list (deck)
-    [ClientRpc]
-    private void DrawClientRpc(ulong drawPlayer, ulong objectID)
-    {
-        // Get spawned card network object by using passed objectID
-        NetworkObject cardNetworkObject = NetworkManager.Singleton.SpawnManager.SpawnedObjects[objectID];
-
-        // Get transform of the spawned card
-        Transform cardTransform = cardNetworkObject.transform;
 
         // We are going to draw from the last card of the list
         // So we don't need to rearrange/sort every time we draw
@@ -188,7 +188,7 @@ public class WOEGameManager : NetworkBehaviour
         cardTemplateComponent.InitializeCardInformation(card.cardName, card.value.ToString(), card.cardDescription, card.cardSprite);
 
         // If drawing player is the same person with the one that owning the card, then put the card into player's hand
-        if (NetworkManager.LocalClientId == drawPlayer)
+        if (NetworkManager.LocalClientId == drawPlayerID)
         {
             // Set instantiated card's parent to player hand
             cardTransform.SetParent(playerHand);
@@ -226,6 +226,19 @@ public class WOEGameManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void Notify_SetPlayerHealthServerRpc(ulong targetID, int hp)
     {
+        // Update Data
+        // If hp update target is host
+        if(hostPlayer.GetPlayerNetworkID() == targetID)
+        {
+            // Update host hp data
+            hostPlayer.SetPlayerHP(hp);
+        }
+        else
+        {
+            // Update client hp data
+            clientPlayer.SetPlayerHP(hp);
+        }
+
         SetPlayerHealthClientRpc(targetID, hp);
     }
 
@@ -236,10 +249,12 @@ public class WOEGameManager : NetworkBehaviour
     [ClientRpc]
     private void SetPlayerHealthClientRpc(ulong targetID, int hp)
     {
+        // Update UI
         // If local player received dmg, then should apply change to playerHPLabel
         if(targetID == NetworkManager.LocalClientId)
         {
             playerHPLabel.text = hp.ToString();
+
         }
         // If target network ID is not the same with local player's, then apply change to enemyHPLabel
         else
@@ -334,6 +349,15 @@ public class WOEGameManager : NetworkBehaviour
         if (tempClient != null && tempClient.TryGetComponent<PlayerNetwork>(out PlayerNetwork clientNetwork))
         {
             clientPlayer = clientNetwork;
+        }
+
+        // If both players' references have been set
+        if(hostPlayer && clientPlayer)
+        {
+            // Initialize game
+            // Set each player HP to maximum
+            Notify_SetPlayerHealthServerRpc(hostPlayer.GetPlayerNetworkID(), hostPlayer.GetPlayerMaxHP());
+            Notify_SetPlayerHealthServerRpc(clientPlayer.GetPlayerNetworkID(), clientPlayer.GetPlayerMaxHP());
         }
     }
 
