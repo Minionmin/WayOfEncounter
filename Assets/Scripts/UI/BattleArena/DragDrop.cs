@@ -14,15 +14,21 @@ using UnityEngine;
 
 public class DragDrop : NetworkBehaviour
 {
-    /// <summary> Card's network ID that will be used to get player reference in WOEGameManager.cs </summary>
-    public NetworkVariable<ulong> cardNetworkID = new NetworkVariable<ulong>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-
     // Prevent mistyping in the future
     private const string DROPZONE_TAG = "DropZone";
+
+    // This gameobject's CardTemplate component
+    private CardTemplate cardTemplate;
 
     private bool isDragging = false;
     private bool isDroppable = false;
     private Transform startParent = null;
+
+    private void Awake()
+    {
+        // Get this gameobject's CardTemplate component
+        cardTemplate = GetComponent<CardTemplate>();
+    }
 
     private void Update()
     {
@@ -64,7 +70,7 @@ public class DragDrop : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        cardNetworkID.Value = gameObject.GetComponent<NetworkObject>().NetworkObjectId;
+        cardTemplate.cardNetworkID.Value = gameObject.GetComponent<NetworkObject>().NetworkObjectId;
     }
 
     // Being called at CardTemplate prefab EventTrigger on Start Drag
@@ -109,13 +115,13 @@ public class DragDrop : NetworkBehaviour
         if(isDroppable)
         {
             // If we can drop the card in the dropzone, then update the card position in both clients
-            WOEGameManager.Instance.Notify_PlaceCardAtServerRpc(cardNetworkID.Value, WOEGameManager.Instance.dropZoneContainer.gameObject);
+            WOEGameManager.Instance.Notify_PlaceCardAtServerRpc(cardTemplate.cardNetworkID.Value, WOEGameManager.Instance.dropZoneContainer.gameObject);
         }
         // If the card is not in the drop zone
         else
         {
             // Return/Update card position based on OwnerID
-            WOEGameManager.Instance.Notify_ReturnCardToPlayerServerRpc(cardNetworkID.Value);
+            WOEGameManager.Instance.Notify_ReturnCardToPlayerServerRpc(cardTemplate.cardNetworkID.Value);
         }
     }
 }

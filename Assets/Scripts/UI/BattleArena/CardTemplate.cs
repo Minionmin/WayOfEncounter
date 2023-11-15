@@ -6,8 +6,11 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class CardTemplate : MonoBehaviour
+public class CardTemplate : NetworkBehaviour
 {
+    /// <summary> Card's network ID that will be used to get player reference in WOEGameManager.cs </summary>
+    public NetworkVariable<ulong> cardNetworkID = new NetworkVariable<ulong>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
     [SerializeField] private TextMeshProUGUI cardNameLabel;
     [SerializeField] private TextMeshProUGUI cardValueLabel;
     [SerializeField] private TextMeshProUGUI cardDescLabel;

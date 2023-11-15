@@ -85,17 +85,17 @@ public class PlayerNetwork : NetworkBehaviour
 
         if(Input.GetKeyUp(KeyCode.Q))
         {
-            WOEGameManager.Instance.ChangeStateToClientRpc(WOEGameManager.GameState.HostTurn);
+            WOEGameManager.Instance.Notify_ChangeStateToServerRpc(WOEGameManager.GameState.HostTurn);
         }
 
         if (Input.GetKeyUp(KeyCode.E))
         {
-            WOEGameManager.Instance.ChangeStateToClientRpc(WOEGameManager.GameState.ClientTurn);
+            WOEGameManager.Instance.Notify_ChangeStateToServerRpc(WOEGameManager.GameState.ClientTurn);
         }
 
         if (Input.GetKeyUp(KeyCode.R))
         {
-            WOEGameManager.Instance.ChangeStateToClientRpc(WOEGameManager.GameState.ProcessTurn);
+            WOEGameManager.Instance.Notify_ChangeStateToServerRpc(WOEGameManager.GameState.ProcessTurn);
         }
     }
 

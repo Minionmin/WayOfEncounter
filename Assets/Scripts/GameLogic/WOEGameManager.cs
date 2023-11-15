@@ -10,11 +10,13 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Dynamic;
 using TMPro;
 using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.XR;
+using static Card;
 
 public class WOEGameManager : NetworkBehaviour
 {
@@ -40,8 +42,10 @@ public class WOEGameManager : NetworkBehaviour
     // Network variable
     /// <summary> Index of the deck we got from randomization </summary>
     NetworkVariable<int> randomDeckIndex = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary> The attack token determine which player's going to attack (0 = host attack, 1 = client attack) </summary>
+    NetworkVariable<int> attackToken = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
     /// <summary> Number of turn that has been passed </summary>
-    NetworkVariable<int> currentTurn = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    // NetworkVariable<int> currentTurn = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // Deck related variable
     /// <summary> This is the original list of decks that are directly referenced from ScriptableObject </summary>
@@ -136,26 +140,31 @@ public class WOEGameManager : NetworkBehaviour
         };
     }
 
+    // When comfirm button is clicked, submit and process cards in the drop zone
+    private void ActionUI_OnConfirmButtonClicked(object sender, System.EventArgs e)
+    {
+        // If it is not our turn then do nothing
+        if (!IsPlayerTurn()) return;
+
+        Notify_ConfirmTurnServerRpc(new ServerRpcParams());
+    }
 
 
-    // Game state transition functions
+
+    // ******************* Game state transition *******************
+    [ServerRpc(RequireOwnership = false)]
+    public void Notify_ChangeStateToServerRpc(GameState targetState)
+    {
+        ChangeStateToClientRpc(targetState);
+    }
+
     [ClientRpc]
     public void ChangeStateToClientRpc(GameState targetState)
     {
         state = targetState;
         OnGameStateChange?.Invoke(this, EventArgs.Empty);
     }
-
-
-
-    // When comfirm button is clicked, submit and process cards in the drop zone
-    private void ActionUI_OnConfirmButtonClicked(object sender, System.EventArgs e)
-    {
-        // If it is not our turn then do nothing
-        if(!IsPlayerTurn()) return;
-
-        Notify_ConfirmTurnServerRpc(new ServerRpcParams());
-    }
+    // ******************* Game state transition *******************
 
 
 
@@ -163,28 +172,78 @@ public class WOEGameManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void Notify_ConfirmTurnServerRpc(ServerRpcParams serverRpcParams)
     {
+        // Get ID of the player who pressed confirm button
         ulong confirmPlayerID = serverRpcParams.Receive.SenderClientId;
 
-        // If there is any card to process
-        if (dropZoneContainer.childCount > 0)
+        switch(state)
         {
-            // Get that card info
-            if (dropZoneContainer.GetChild(0).gameObject.TryGetComponent<CardTemplate>(out CardTemplate cardInfo))
-            {
-                // Get cardType and reuse it everywhere under this scope
-                Card.CardType cardType = cardInfo.GetCardType();
+            case GameState.HostTurn:
+                ChangeStateToClientRpc(GameState.ClientTurn);
+                break;
+            case GameState.ClientTurn:
+                ChangeStateToClientRpc(GameState.ProcessTurn);
+                Notify_ProcessTurnServerRpc();
+                break;
+            case GameState.ProcessTurn:
+                break;
+            default: 
+                break;
+        }
+        // The data processing is only needed on the server side so there is no point in creating ClientRpc version
+    }
 
-                // If it is any attack-type card
-                if (cardType == Card.CardType.PhysicalDamage || cardType == Card.CardType.MagicalDamage)
+    // ************************************** Process
+
+    [ServerRpc(RequireOwnership = false)]
+    private void Notify_ProcessTurnServerRpc()
+    {
+        // If there is no card in the dropzone then we proceed to the next turn
+        if (dropZoneContainer.childCount == 0) return;
+
+        // Initializing card1 and card2
+        CardTemplate card1 = null;
+        CardTemplate card2 = null;
+
+        // If there is only 1 card
+        if (dropZoneContainer.childCount == 1)
+        {
+            card1 = dropZoneContainer.GetChild(0).GetComponent<CardTemplate>();
+
+            // If it is any attack-type card
+            if (IsAttackCard(card1))
+            {
+                // Attack
+                Notify_AttackServerRpc(card1.gameObject.GetComponent<NetworkObject>().OwnerClientId, card1.GetCardValue(), (int)card1.GetCardType());
+            }
+        }
+
+        // If there are 2 cards
+        if (dropZoneContainer.childCount == 2)
+        {
+            card1 = dropZoneContainer.GetChild(0).GetComponent<CardTemplate>();
+            card2 = dropZoneContainer.GetChild(1).GetComponent<CardTemplate>();
+
+            // If the first card is attack card
+            if (IsAttackCard(card1))
+            {
+                // If it is blockable then blocking player receives no damage
+                if (IsBlockable(card1, card2))
                 {
+                    Debug.Log($"{card1.GetCardName()} is blocked with {card2.GetCardType()}");
+                }
+                else
+                {
+                    // The first card is attack card and the attacked player didn't block
                     // Attack
-                    Notify_AttackServerRpc(confirmPlayerID, cardInfo.GetCardValue(), (int)cardInfo.GetCardType());
+                    Notify_AttackServerRpc(card1.gameObject.GetComponent<NetworkObject>().OwnerClientId, card1.GetCardValue(), (int)card1.GetCardType());
                 }
             }
         }
 
-        // The data processing is only needed on the server side so there is no point in creating ClientRpc version
+        ChangeStateToClientRpc(GameState.HostTurn);
     }
+
+    // ************************************** Process
 
     // ************************************** Attack
 
@@ -207,6 +266,7 @@ public class WOEGameManager : NetworkBehaviour
     }
 
     // ************************************** Attack
+
     // ******************* Submit/Process cards in the drop zone *******************
 
 
@@ -251,11 +311,11 @@ public class WOEGameManager : NetworkBehaviour
         Transform cardTransform = cardNetworkObject.transform;
 
         // Update corresponding player hand that is being managed by game manager
-        if (drawPlayerID == 0)
+        if (drawPlayerID == hostPlayer.GetPlayerNetworkID())
         {
             hostCards.Add(cardNetworkObject.NetworkObjectId);
         }
-        else if (drawPlayerID == 1)
+        else
         {
             clientCards.Add(cardNetworkObject.NetworkObjectId);
         }
@@ -464,6 +524,9 @@ public class WOEGameManager : NetworkBehaviour
             // Set each player HP to maximum
             Notify_SetPlayerHealthServerRpc(hostPlayer.GetPlayerNetworkID(), hostPlayer.GetPlayerMaxHP());
             Notify_SetPlayerHealthServerRpc(clientPlayer.GetPlayerNetworkID(), clientPlayer.GetPlayerMaxHP());
+
+            // Change to standby phase once both players are connected
+            ChangeStateToClientRpc(GameState.StandBy);
         }
     }
 
@@ -511,6 +574,18 @@ public class WOEGameManager : NetworkBehaviour
     {
         return state == GameState.HostTurn && NetworkManager.Singleton.LocalClientId == hostPlayer.GetPlayerNetworkID() ||
             state == GameState.ClientTurn && NetworkManager.Singleton.LocalClientId == clientPlayer.GetPlayerNetworkID();
+    }
+
+    private bool IsAttackCard(CardTemplate card1)
+    {
+        return card1.GetCardType() == Card.CardType.PhysicalDamage || 
+            card1.GetCardType() == Card.CardType.MagicalDamage;
+    }
+
+    private bool IsBlockable(CardTemplate card1, CardTemplate card2)
+    {
+        return card1.GetCardType() == Card.CardType.PhysicalDamage && card2.GetCardType() == Card.CardType.PhysicalBlock ||
+            card1.GetCardType() == Card.CardType.MagicalDamage && card2.GetCardType() == Card.CardType.MagicalBlock;
     }
 
     public PlayerNetwork GetHostPlayer()
