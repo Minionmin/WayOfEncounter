@@ -563,6 +563,11 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 951099334
       objectReference: {fileID: 0}
+    - target: {fileID: -5001095162606256437, guid: 753a8e5bfe0440a4dbf2abac048e43a3,
+        type: 3}
+      propertyPath: AutoObjectParentSync
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 59918425512849181, guid: 753a8e5bfe0440a4dbf2abac048e43a3,
         type: 3}
       propertyPath: m_Pivot.x
