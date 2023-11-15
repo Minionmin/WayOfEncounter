@@ -13,6 +13,7 @@ using TMPro;
 using Unity.Netcode;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.XR;
 
 public class WOEGameManager : NetworkBehaviour
 {
@@ -33,7 +34,10 @@ public class WOEGameManager : NetworkBehaviour
     NetworkVariable<int> randomDeckIndex = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // Deck related variable
+
+    /// <summary> This is the original list of decks that are directly referenced from ScriptableObject </summary>
     [SerializeField] private List<Deck> decks;
+    /// <summary> This is the deck that we got from randomizing (the copy version, not the original (not the ScriptableObject one)) </summary>
     public List<Card> deck;
 
     // Cards in each player hand
@@ -59,6 +63,20 @@ public class WOEGameManager : NetworkBehaviour
     // Player's reference
     private PlayerNetwork hostPlayer = null;
     private PlayerNetwork clientPlayer = null;
+
+    public enum GameState
+    {
+        // Initialization stuff goes here
+        StandBy,
+        // Client puts the card into the dropZone
+        HostTurn,
+        // Client puts the card into the dropZone
+        ClientTurn,
+        // Process the outcome of cards in the dropZone
+        ProcessTurn
+    }
+
+    public GameState state = GameState.StandBy;
 
     // For local stuff
     private void Awake()
@@ -148,8 +166,6 @@ public class WOEGameManager : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     private void Notify_AttackServerRpc(ulong attackerID, int attackValue, int damageType)
     {
-        Debug.Log($"Attacker: {attackerID}, Value: {attackValue}, Type: {(Card.CardType)damageType}");
-
         // If host attacks
         if (attackerID == hostPlayer.GetPlayerNetworkID())
         {
@@ -370,14 +386,6 @@ public class WOEGameManager : NetworkBehaviour
 
 
 
-    private void RemoveDrawnCard()
-    {
-        // Remove the last card from the deck
-        deck.RemoveAt(deck.Count - 1);
-    }
-
-
-
     // ******************* Random a deck to play *******************
     [ServerRpc(RequireOwnership = false)]
     public void Notify_RandomDeckServerRpc()
@@ -387,6 +395,8 @@ public class WOEGameManager : NetworkBehaviour
 
         // Notify each client about the random deck index
         RandomDeckClientRpc(randomDeckIndex.Value);
+
+        Notify_ShuffleDeckServerRpc();
     }
 
     [ClientRpc]
@@ -432,4 +442,39 @@ public class WOEGameManager : NetworkBehaviour
     }
 
     // ******************* Get player reference *******************
+
+
+
+    // ******************* Shuffle the deck on both clients *******************
+    [ServerRpc(RequireOwnership = false)]
+    private void Notify_ShuffleDeckServerRpc()
+    {
+        for (int i = 0; i < deck.Count; i++)
+        {
+            // Firstly, we let the server randomizes the index and then pass it to clients so they have the same randomized index
+            int rand = Random.Range(i, deck.Count);
+            // Then proceed to swap the card position on both clients (which is passed with the same index param)
+            SwapCardPositionClientRpc(i, rand);
+        }
+    }
+    // ******************* Shuffle the deck on both clients *******************
+
+
+
+    // ******************* Swap card position on both clients *******************
+    [ClientRpc]
+    private void SwapCardPositionClientRpc(int i, int index)
+    {
+        // Swap card position
+        Card temp = deck[i];
+        deck[i] = deck[index];
+        deck[index] = temp;
+    }
+    // ******************* Swap card position on both clients *******************
+
+    private void RemoveDrawnCard()
+    {
+        // Remove the last card from the deck
+        deck.RemoveAt(deck.Count - 1);
+    }
 }
