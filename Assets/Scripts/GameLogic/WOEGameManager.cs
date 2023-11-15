@@ -107,52 +107,67 @@ public class WOEGameManager : NetworkBehaviour
     // When comfirm button is clicked, submit and process cards in the drop zone
     private void ActionUI_OnConfirmButtonClicked(object sender, System.EventArgs e)
     {
-        Notify_ConfirmTurnServerRpc();
+        // Todo: if it is not our turn then do nothing
+
+
+        Notify_ConfirmTurnServerRpc(new ServerRpcParams());
     }
 
 
 
     // ******************* Submit/Process cards in the drop zone *******************
     [ServerRpc(RequireOwnership = false)]
-    private void Notify_ConfirmTurnServerRpc()
+    private void Notify_ConfirmTurnServerRpc(ServerRpcParams serverRpcParams)
     {
-        ConfirmTurnClientRpc();
-    }
+        ulong confirmPlayerID = serverRpcParams.Receive.SenderClientId;
 
-    [ClientRpc]
-    public void ConfirmTurnClientRpc()
-    {
         // If there is any card to process
-        if(dropZoneContainer.childCount > 0)
+        if (dropZoneContainer.childCount > 0)
         {
-            CardTemplate cardInfo = dropZoneContainer.GetChild(0).gameObject.GetComponent<CardTemplate>();
-            Debug.Log("Name: " + cardInfo.GetCardName() + " " + cardInfo.GetCardType().ToString());
+            // Get that card info
+            if (dropZoneContainer.GetChild(0).gameObject.TryGetComponent<CardTemplate>(out CardTemplate cardInfo))
+            {
+                // Get cardType and reuse it everywhere under this scope
+                Card.CardType cardType = cardInfo.GetCardType();
+
+                // If it is any attack-type card
+                if (cardType == Card.CardType.PhysicalDamage || cardType == Card.CardType.MagicalDamage)
+                {
+                    // Attack
+                    Notify_AttackServerRpc(confirmPlayerID, cardInfo.GetCardValue(), (int)cardInfo.GetCardType());
+                }
+            }
         }
 
+        // The data processing is only needed on the server side so there is no point in creating ClientRpc version
     }
+
+    // ************************************** Attack
+
+    // Passing cardType by int so the code is easier to read (doesn't need to take care of custom type(Card.cardType))
+    [ServerRpc(RequireOwnership = false)]
+    private void Notify_AttackServerRpc(ulong attackerID, int attackValue, int damageType)
+    {
+        Debug.Log($"Attacker: {attackerID}, Value: {attackValue}, Type: {(Card.CardType)damageType}");
+
+        // If host attacks
+        if (attackerID == hostPlayer.GetPlayerNetworkID())
+        {
+            Notify_SetPlayerHealthServerRpc(clientPlayer.GetPlayerNetworkID(), clientPlayer.GetPlayerHP() - attackValue);
+        }
+        // If client attacks
+        else
+        {
+            Notify_SetPlayerHealthServerRpc(hostPlayer.GetPlayerNetworkID(), hostPlayer.GetPlayerHP() - attackValue);
+        }
+
+        // The data processing is only needed on the server side so there is no point in creating ClientRpc version
+    }
+
+    // ************************************** Attack
     // ******************* Submit/Process cards in the drop zone *******************
 
 
-
-    // ******************* Random a deck to play *******************
-    [ServerRpc(RequireOwnership = false)]
-    public void Notify_RandomDeckServerRpc()
-    {
-        // Select a *Reference* to a random Deck Scriptable Object
-        randomDeckIndex.Value = UnityEngine.Random.Range(0, decks.Count);
-
-        // Notify each client about the random deck index
-        RandomDeckClientRpc(randomDeckIndex.Value);
-    }
-
-    [ClientRpc]
-    public void RandomDeckClientRpc(int chosenDeckIndex)
-    {
-        // Copy a random deck (cards)
-        // This will prevent original scriptable object's data being messed up
-        deck = new List<Card>(decks[chosenDeckIndex].cards);
-    }
-    // ******************* Random a deck to play *******************
 
     // ******************* Draw card *******************
     // Client -> Server
@@ -360,6 +375,28 @@ public class WOEGameManager : NetworkBehaviour
         // Remove the last card from the deck
         deck.RemoveAt(deck.Count - 1);
     }
+
+
+
+    // ******************* Random a deck to play *******************
+    [ServerRpc(RequireOwnership = false)]
+    public void Notify_RandomDeckServerRpc()
+    {
+        // Select a *Reference* to a random Deck Scriptable Object
+        randomDeckIndex.Value = UnityEngine.Random.Range(0, decks.Count);
+
+        // Notify each client about the random deck index
+        RandomDeckClientRpc(randomDeckIndex.Value);
+    }
+
+    [ClientRpc]
+    public void RandomDeckClientRpc(int chosenDeckIndex)
+    {
+        // Copy a random deck (cards)
+        // This will prevent original scriptable object's data being messed up
+        deck = new List<Card>(decks[chosenDeckIndex].cards);
+    }
+    // ******************* Random a deck to play *******************
 
 
 
