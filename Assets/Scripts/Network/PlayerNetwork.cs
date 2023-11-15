@@ -72,7 +72,7 @@ public class PlayerNetwork : NetworkBehaviour
         /*
         if (Input.GetKeyUp(KeyCode.S))
         {
-            // Press S to draw a card
+            // Press S to spawn game manager
             SpawnGameManagerServerRpc();
         }
         */
