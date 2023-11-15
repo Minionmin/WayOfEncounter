@@ -5,6 +5,7 @@
  * 
  *  製作者：Phansuwan Chaichumphon （ミン）
  * 
+ * Todo: Make player not able to drop card in the zone when it's not their turn
  **********************************************/
 
 using System.Collections;

@@ -184,8 +184,6 @@ public class WOEGameManager : NetworkBehaviour
                 ChangeStateToClientRpc(GameState.ProcessTurn);
                 Notify_ProcessTurnServerRpc();
                 break;
-            case GameState.ProcessTurn:
-                break;
             default: 
                 break;
         }
@@ -240,6 +238,7 @@ public class WOEGameManager : NetworkBehaviour
             }
         }
 
+        // Todo: Make attack token worked
         ChangeStateToClientRpc(GameState.HostTurn);
     }
 
@@ -275,13 +274,10 @@ public class WOEGameManager : NetworkBehaviour
     // Client -> Server
     // Let the server handles drawing logic and we will put it in corresponding player's hand later in ClientRpc
     [ServerRpc(RequireOwnership = false)]
-    public void Notify_DrawServerRpc(ServerRpcParams serverRpcParams)
+    public void Notify_DrawServerRpc(ulong drawPlayerID)
     {
         // Return if there is no card left in the deck
         if (deck.Count <= 0) return;
-
-        // The network id of the player who requested drawing
-        ulong drawPlayerID = serverRpcParams.Receive.SenderClientId;
 
         // ******************* Template part *******************
         // Instantiate card template
@@ -366,6 +362,46 @@ public class WOEGameManager : NetworkBehaviour
         Invoke(nameof(RemoveDrawnCard), 0.2f);
     }
     // ******************* Draw card *******************
+
+
+
+    // ******************* Draw multiple cards *******************
+    private IEnumerator DrawMultipleCards(int numberOfCardToDraw, float timeBetweenCard, ulong playerID)
+    {
+        // Check if there is enough card to draw
+        // If not then draw until there is no card left
+        if (numberOfCardToDraw > deck.Count) numberOfCardToDraw = deck.Count;
+
+        // Draw card every n second (prevent drawing too fast which will cause unintentional error)
+        for(int i = 0; i < numberOfCardToDraw; i++)
+        {
+            yield return new WaitForSeconds(timeBetweenCard);
+
+            Notify_DrawServerRpc(playerID);
+        }
+    }
+
+    //************************************** Initialize player hand
+    [ServerRpc(RequireOwnership = false)]
+    private void Notify_InitializingPlayersHandServerRpc(int numberOfCardToDraw, float timeBetweenCard)
+    {
+        StartCoroutine(InitializePlayersHand(numberOfCardToDraw, timeBetweenCard));
+    }
+
+    private IEnumerator InitializePlayersHand(int numberOfCardToDraw, float timeBetweenCard)
+    {
+        // Draw cards for host first
+        StartCoroutine(DrawMultipleCards(numberOfCardToDraw, timeBetweenCard, hostPlayer.GetPlayerNetworkID()));
+        
+        // Wait for each card to be drawn
+        yield return new WaitForSeconds(timeBetweenCard * numberOfCardToDraw + 0.5f);
+
+        // Then draw cards for client
+        StartCoroutine(DrawMultipleCards(numberOfCardToDraw, timeBetweenCard, clientPlayer.GetPlayerNetworkID()));
+    }
+    //************************************** Initialize player hand
+
+    // ******************* Draw multiple cards *******************
 
 
 
@@ -521,16 +557,40 @@ public class WOEGameManager : NetworkBehaviour
         if(hostPlayer && clientPlayer)
         {
             // Initialize game
-            // Set each player HP to maximum
-            Notify_SetPlayerHealthServerRpc(hostPlayer.GetPlayerNetworkID(), hostPlayer.GetPlayerMaxHP());
-            Notify_SetPlayerHealthServerRpc(clientPlayer.GetPlayerNetworkID(), clientPlayer.GetPlayerMaxHP());
-
-            // Change to standby phase once both players are connected
-            ChangeStateToClientRpc(GameState.StandBy);
+            InitializeMatch();
         }
     }
-
     // ******************* Get player reference *******************
+
+
+
+    // ******************* Initializing the match *******************
+    // After every player is connected
+    private void InitializeMatch()
+    {
+        // Set each player HP to maximum
+        Notify_SetPlayerHealthServerRpc(hostPlayer.GetPlayerNetworkID(), hostPlayer.GetPlayerMaxHP());
+        Notify_SetPlayerHealthServerRpc(clientPlayer.GetPlayerNetworkID(), clientPlayer.GetPlayerMaxHP());
+
+        // Change to standby phase once both players are connected
+        ChangeStateToClientRpc(GameState.StandBy);
+
+        // Let host runs initialization command
+        if (IsHost)
+        {
+            // Then draw players cards until their hand size is 5
+            int numberOfCardToDraw = 5;
+            float timeBetweenEachDraw = 0.4f;
+
+            // Draw cards for host first then client
+            Notify_InitializingPlayersHandServerRpc(numberOfCardToDraw, timeBetweenEachDraw);
+        }
+
+        // Todo: make attack token worked
+        // Change to attacker's turn once both players' hands are initialized
+        ChangeStateToClientRpc(GameState.HostTurn);
+    }
+    // ******************* Initializing the match *******************
 
 
 

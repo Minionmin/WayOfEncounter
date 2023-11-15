@@ -77,12 +77,6 @@ public class PlayerNetwork : NetworkBehaviour
         }
         */
 
-        if (Input.GetKeyUp(KeyCode.D))
-        {
-            // Press D to draw a card
-            WOEGameManager.Instance.Notify_DrawServerRpc(new ServerRpcParams());
-        }
-
         if(Input.GetKeyUp(KeyCode.Q))
         {
             WOEGameManager.Instance.Notify_ChangeStateToServerRpc(WOEGameManager.GameState.HostTurn);
