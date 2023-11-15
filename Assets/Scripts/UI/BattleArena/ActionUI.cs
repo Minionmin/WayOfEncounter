@@ -35,5 +35,32 @@ public class ActionUI : NetworkBehaviour
         {
             OnConfirmButtonClicked?.Invoke(this, EventArgs.Empty);
         });
+
+        // Initialize confirm button as uninteractable
+        confirmButton.interactable = false;
+    }
+
+    public override void OnNetworkSpawn()
+    {
+
+    }
+
+    private void WOEGameManager_OnGameStateChange(object sender, EventArgs e)
+    {
+        // Make the confirm button interactable if it's player's turn, the opposite if it's not
+        if (!WOEGameManager.Instance.IsPlayerTurn())
+        {
+            confirmButton.interactable = false;
+        }
+        else
+        {
+            confirmButton.interactable = true;
+        }
+    }
+
+    public void Initialize()
+    {
+        // Confirm button is interactable or not will be depending on game state
+        WOEGameManager.Instance.OnGameStateChange += WOEGameManager_OnGameStateChange;
     }
 }

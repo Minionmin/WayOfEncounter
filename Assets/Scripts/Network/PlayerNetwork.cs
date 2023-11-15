@@ -82,6 +82,21 @@ public class PlayerNetwork : NetworkBehaviour
             // Press D to draw a card
             WOEGameManager.Instance.Notify_DrawServerRpc(new ServerRpcParams());
         }
+
+        if(Input.GetKeyUp(KeyCode.Q))
+        {
+            WOEGameManager.Instance.ChangeStateToClientRpc(WOEGameManager.GameState.HostTurn);
+        }
+
+        if (Input.GetKeyUp(KeyCode.E))
+        {
+            WOEGameManager.Instance.ChangeStateToClientRpc(WOEGameManager.GameState.ClientTurn);
+        }
+
+        if (Input.GetKeyUp(KeyCode.R))
+        {
+            WOEGameManager.Instance.ChangeStateToClientRpc(WOEGameManager.GameState.ProcessTurn);
+        }
     }
 
     public int GetPlayerMaxHP()

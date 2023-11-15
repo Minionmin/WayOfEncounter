@@ -7,6 +7,7 @@
  * 
  **********************************************/
 
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -29,12 +30,20 @@ public class WOEGameManager : NetworkBehaviour
     private const string PLAYER_HAND = "PlayerHand";
     private const string ENEMY_HAND = "EnemyHand";
 
+    // Events
+    public event EventHandler OnGameStateChange;
+
+    // Template variable
     [Header("Deck/Card template")]
     [SerializeField] private Transform cardTemplateTransform;
+
+    // Network variable
+    /// <summary> Index of the deck we got from randomization </summary>
     NetworkVariable<int> randomDeckIndex = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    /// <summary> Number of turn that has been passed </summary>
+    NetworkVariable<int> currentTurn = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
     // Deck related variable
-
     /// <summary> This is the original list of decks that are directly referenced from ScriptableObject </summary>
     [SerializeField] private List<Deck> decks;
     /// <summary> This is the deck that we got from randomizing (the copy version, not the original (not the ScriptableObject one)) </summary>
@@ -66,6 +75,8 @@ public class WOEGameManager : NetworkBehaviour
 
     public enum GameState
     {
+        // At the very first stage of the match
+        NetworkPreparing,
         // Initialization stuff goes here
         StandBy,
         // Client puts the card into the dropZone
@@ -76,7 +87,8 @@ public class WOEGameManager : NetworkBehaviour
         ProcessTurn
     }
 
-    public GameState state = GameState.StandBy;
+    // Game state that will run the game
+    public GameState state = GameState.NetworkPreparing;
 
     // For local stuff
     private void Awake()
@@ -106,7 +118,9 @@ public class WOEGameManager : NetworkBehaviour
         hostCards = new List<ulong>();
         clientCards = new List<ulong>();
 
+        // Register confirm function to ActionUI's confirm button
         ActionUI.Instance.OnConfirmButtonClicked += ActionUI_OnConfirmButtonClicked;
+        ActionUI.Instance.Initialize();
     }
 
     // Use instead of Start() for online stuff
@@ -122,11 +136,23 @@ public class WOEGameManager : NetworkBehaviour
         };
     }
 
+
+
+    // Game state transition functions
+    [ClientRpc]
+    public void ChangeStateToClientRpc(GameState targetState)
+    {
+        state = targetState;
+        OnGameStateChange?.Invoke(this, EventArgs.Empty);
+    }
+
+
+
     // When comfirm button is clicked, submit and process cards in the drop zone
     private void ActionUI_OnConfirmButtonClicked(object sender, System.EventArgs e)
     {
-        // Todo: if it is not our turn then do nothing
-
+        // If it is not our turn then do nothing
+        if(!IsPlayerTurn()) return;
 
         Notify_ConfirmTurnServerRpc(new ServerRpcParams());
     }
@@ -452,7 +478,7 @@ public class WOEGameManager : NetworkBehaviour
         for (int i = 0; i < deck.Count; i++)
         {
             // Firstly, we let the server randomizes the index and then pass it to clients so they have the same randomized index
-            int rand = Random.Range(i, deck.Count);
+            int rand = UnityEngine.Random.Range(i, deck.Count);
             // Then proceed to swap the card position on both clients (which is passed with the same index param)
             SwapCardPositionClientRpc(i, rand);
         }
@@ -472,9 +498,28 @@ public class WOEGameManager : NetworkBehaviour
     }
     // ******************* Swap card position on both clients *******************
 
+
+
+    // Remove the last card from the deck
     private void RemoveDrawnCard()
     {
-        // Remove the last card from the deck
         deck.RemoveAt(deck.Count - 1);
+    }
+
+    // Check if it is player's turn or not
+    public bool IsPlayerTurn()
+    {
+        return state == GameState.HostTurn && NetworkManager.Singleton.LocalClientId == hostPlayer.GetPlayerNetworkID() ||
+            state == GameState.ClientTurn && NetworkManager.Singleton.LocalClientId == clientPlayer.GetPlayerNetworkID();
+    }
+
+    public PlayerNetwork GetHostPlayer()
+    {
+        return hostPlayer;
+    }
+
+    private PlayerNetwork GetClientPlayer()
+    {
+        return clientPlayer;
     }
 }
