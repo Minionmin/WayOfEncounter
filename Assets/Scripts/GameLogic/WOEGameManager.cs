@@ -80,9 +80,15 @@ public class WOEGameManager : NetworkBehaviour
         playerHand = playerZone.Find(PLAYER_HAND);
         enemyHand = enemyZone.Find(ENEMY_HAND);
 
-        //Initilizing "player's HP" and "enemy's HP" Label
+        // Initilizing "player's HP" and "enemy's HP" Label
         playerHPLabel = playerCharacter.GetComponentInChildren<TextMeshProUGUI>();
         enemyHPLabel = enemyCharacter.GetComponentInChildren<TextMeshProUGUI>();
+
+        // Initializing host, client cards list
+        hostCards = new List<ulong>();
+        clientCards = new List<ulong>();
+
+        ActionUI.Instance.OnConfirmButtonClicked += ActionUI_OnConfirmButtonClicked;
     }
 
     // Use instead of Start() for online stuff
@@ -96,10 +102,37 @@ public class WOEGameManager : NetworkBehaviour
         {
             GetPlayerRefClientRpc();
         };
-
-        hostCards = new List<ulong>();
-        clientCards = new List<ulong>();
     }
+
+    // When comfirm button is clicked, submit and process cards in the drop zone
+    private void ActionUI_OnConfirmButtonClicked(object sender, System.EventArgs e)
+    {
+        Notify_ConfirmTurnServerRpc();
+    }
+
+
+
+    // ******************* Submit/Process cards in the drop zone *******************
+    [ServerRpc(RequireOwnership = false)]
+    private void Notify_ConfirmTurnServerRpc()
+    {
+        ConfirmTurnClientRpc();
+    }
+
+    [ClientRpc]
+    public void ConfirmTurnClientRpc()
+    {
+        // If there is any card to process
+        if(dropZoneContainer.childCount > 0)
+        {
+            CardTemplate cardInfo = dropZoneContainer.GetChild(0).gameObject.GetComponent<CardTemplate>();
+            Debug.Log("Name: " + cardInfo.GetCardName() + " " + cardInfo.GetCardType().ToString());
+        }
+
+    }
+    // ******************* Submit/Process cards in the drop zone *******************
+
+
 
     // ******************* Random a deck to play *******************
     [ServerRpc(RequireOwnership = false)]
@@ -185,7 +218,7 @@ public class WOEGameManager : NetworkBehaviour
         CardTemplate cardTemplateComponent = cardTransform.GetComponent<CardTemplate>();
 
         // Update card's information according to the card player've drawn
-        cardTemplateComponent.InitializeCardInformation(card.cardName, card.value.ToString(), card.cardDescription, card.cardSprite);
+        cardTemplateComponent.InitializeCardInformation(card.cardName, card.value.ToString(), card.cardDescription, card.cardSprite, card.cardType);
 
         // If drawing player is the same person with the one that owning the card, then put the card into player's hand
         if (NetworkManager.LocalClientId == drawPlayerID)

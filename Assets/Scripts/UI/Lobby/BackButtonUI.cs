@@ -1,3 +1,12 @@
+/**********************************************
+ * 
+ *  BackButtonUI.cs 
+ *  Back button in lobby menu
+ * 
+ *  製作者：Phansuwan Chaichumphon （ミン）
+ * 
+ **********************************************/
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -10,7 +19,7 @@ public class BackButtonUI : MonoBehaviour
 
     public event EventHandler OnBackButtonClicked;
 
-    [SerializeField] public Button backButton;
+    [SerializeField] private Button backButton;
 
     private void Awake()
     {
