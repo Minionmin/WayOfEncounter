@@ -251,7 +251,7 @@ public class WOEGameManager : NetworkBehaviour
 
 
 
-    // ******************* Update card position *******************
+    // ******************* Update card position (Dropzone) *******************
     [ServerRpc(RequireOwnership = false)]
     public void Notify_PlaceCardAtServerRpc(ulong cardID, NetworkObjectReference placeAt)
     {
@@ -259,25 +259,52 @@ public class WOEGameManager : NetworkBehaviour
     }
 
     [ClientRpc]
-    private void PlaceCardAtClientRpc(ulong cardID_in, NetworkObjectReference placeAt)
+    private void PlaceCardAtClientRpc(ulong cardID, NetworkObjectReference placeAt)
     {
+        // Check if the target place is available by using TryGet
         if (placeAt.TryGet(out NetworkObject placeObject))
         {
             Transform targetPlace = placeObject.transform;
 
             if (targetPlace != null)
             {
-                Debug.Log(cardID_in + " " + targetPlace.name);
+                NetworkObject cardNetworkObject = NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardID];
+                if (cardNetworkObject != null)
+                {
+                    cardNetworkObject.transform.SetParent(targetPlace, false);
+                }
             }
         }
-
-        /*
-        foreach(var cardID in hostCards)
-        {
-            Debug.Log(cardID);
-        }*/
     }
-    // ******************* Update card position *******************
+    // ******************* Update card position (Dropzone) *******************
+
+
+
+    // ******************* Update card position (Player's hand) *******************
+    [ServerRpc(RequireOwnership = false)]
+    public void Notify_ReturnCardToPlayerServerRpc(ulong cardID)
+    {
+        ReturnCardToPlayerClientRpc(cardID);
+    }
+
+    [ClientRpc]
+    private void ReturnCardToPlayerClientRpc(ulong cardID)
+    {
+        // Check if this player is owning the card
+        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardID].OwnerClientId == NetworkManager.LocalClientId)
+        {
+            // Place the card in the player hand if player is owning the card
+            PlaceCardAtClientRpc(cardID, playerHand.gameObject);
+        }
+        // If player is not owning the card
+        else
+        {
+            // Place the card in the enemy hand instead
+            PlaceCardAtClientRpc(cardID, enemyHand.gameObject);
+        }
+    }
+    // ******************* Update card position (Player's hand) *******************
+
 
 
     private void RemoveDrawnCard()
