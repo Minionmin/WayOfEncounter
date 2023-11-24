@@ -69,13 +69,13 @@ public class PlayerNetwork : NetworkBehaviour
         // Cannot process if you are not player's owner
         if(!IsOwner) return;
 
-        /*
+        
         if (Input.GetKeyUp(KeyCode.S))
         {
             // Press S to spawn game manager
-            SpawnGameManagerServerRpc();
+            //SpawnGameManagerServerRpc();
         }
-        */
+        
 
         if(Input.GetKeyUp(KeyCode.Q))
         {
