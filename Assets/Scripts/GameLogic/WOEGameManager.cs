@@ -214,6 +214,9 @@ public class WOEGameManager : NetworkBehaviour
                 // Attack
                 Notify_AttackServerRpc(card1.gameObject.GetComponent<NetworkObject>().OwnerClientId, card1.GetCardValue(), (int)card1.GetCardType());
             }
+
+            // Destroy the only card after it has been used
+            Notify_DeleteCardServerRpc(card1.gameObject); // card1 only
         }
 
         // If there are 2 cards
@@ -228,6 +231,7 @@ public class WOEGameManager : NetworkBehaviour
                 // If it is blockable then blocking player receives no damage
                 if (IsBlockable(card1, card2))
                 {
+                    // Will play block effect here
                     Debug.Log($"{card1.GetCardName()} is blocked with {card2.GetCardType()}");
                 }
                 else
@@ -237,6 +241,12 @@ public class WOEGameManager : NetworkBehaviour
                     Notify_AttackServerRpc(card1.gameObject.GetComponent<NetworkObject>().OwnerClientId, card1.GetCardValue(), (int)card1.GetCardType());
                 }
             }
+
+            // Delete cards after they have been used
+            // There will be only 2 cards so we won't use loop here
+            // Index will be changed after we deleted the card so becareful
+            Notify_DeleteCardServerRpc(card2.gameObject); // card2
+            Notify_DeleteCardServerRpc(card1.gameObject); // card1
         }
 
         // Todo: Make attack token worked
@@ -405,6 +415,27 @@ public class WOEGameManager : NetworkBehaviour
     // ******************* Draw multiple cards *******************
 
 
+
+    // ******************* Delete a card *******************
+    // Since we already know parent of the cards, there is no need to pass their network IDs
+    // And we cannot pass Gameobject as parameter in RPC function
+    [ServerRpc(RequireOwnership = false)]
+    private void Notify_DeleteCardServerRpc(NetworkObjectReference cardNetworkReference)
+    {
+        // Delete the card on both clients
+        if (cardNetworkReference.TryGet(out NetworkObject cardNetworkObject))
+        {
+            cardNetworkObject.Despawn();
+        }
+        //DeleteCardClientRpc(cardNetworkReference);
+    }
+
+    [ClientRpc]
+    private void DeleteCardClientRpc(NetworkObjectReference cardNetworkReference)
+    {
+
+    }
+    // ******************* Draw multiple cards *******************
 
     // ******************* Update player HP *******************
     // Client -> Server (Function will be called on server side but clients won't receive update)
