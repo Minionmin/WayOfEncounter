@@ -11,6 +11,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class DragDrop : NetworkBehaviour
@@ -80,6 +81,9 @@ public class DragDrop : NetworkBehaviour
         // Return if not owning the card
         if (!IsOwner) return;
 
+        // Also return if the card is in the dropzone and it is not player's turn
+        if (WOEGameManager.Instance.IsInDropZoneContainer(transform) && !WOEGameManager.Instance.IsPlayerTurn()) return;
+
         // Set start parent/position in case we want to return the card to it's original place
         if (!startParent)
         {
@@ -111,9 +115,12 @@ public class DragDrop : NetworkBehaviour
 
         // Reset isDragging
         isDragging = false;
-        
+        // Also return if the card is in the dropzone and it is not player's turn
+        if (WOEGameManager.Instance.IsInDropZoneContainer(transform) && !WOEGameManager.Instance.IsPlayerTurn()) return;
+
         // If the card is over the drop zone
-        if(isDroppable)
+        // AND IF IT IS PLAYER'S TURN
+        if (isDroppable && WOEGameManager.Instance.IsPlayerTurn())
         {
             // If we can drop the card in the dropzone, then update the card position in both clients
             WOEGameManager.Instance.Notify_PlaceCardAtServerRpc(cardTemplate.cardNetworkID.Value, WOEGameManager.Instance.dropZoneContainer.gameObject);

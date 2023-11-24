@@ -124,6 +124,7 @@ public class WOEGameManager : NetworkBehaviour
 
         // Register confirm function to ActionUI's confirm button
         ActionUI.Instance.OnConfirmButtonClicked += ActionUI_OnConfirmButtonClicked;
+        // We initialize actionUI here just in case WOEManager is not spawned yet
         ActionUI.Instance.Initialize();
     }
 
@@ -646,6 +647,11 @@ public class WOEGameManager : NetworkBehaviour
     {
         return card1.GetCardType() == Card.CardType.PhysicalDamage && card2.GetCardType() == Card.CardType.PhysicalBlock ||
             card1.GetCardType() == Card.CardType.MagicalDamage && card2.GetCardType() == Card.CardType.MagicalBlock;
+    }
+
+    public bool IsInDropZoneContainer(Transform cardTransform)
+    {
+        return cardTransform.parent == dropZoneContainer;
     }
 
     public PlayerNetwork GetHostPlayer()
