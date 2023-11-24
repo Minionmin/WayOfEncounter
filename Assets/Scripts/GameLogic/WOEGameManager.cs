@@ -523,8 +523,10 @@ public class WOEGameManager : NetworkBehaviour
     [ClientRpc]
     private void ReturnCardToPlayerClientRpc(ulong cardID)
     {
+        var cardNetworkObject = NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardID];
+
         // Check if this player is owning the card
-        if (NetworkManager.Singleton.SpawnManager.SpawnedObjects[cardID].OwnerClientId == NetworkManager.LocalClientId)
+        if (cardNetworkObject.OwnerClientId == NetworkManager.LocalClientId)
         {
             // Place the card in the player hand if player is owning the card
             PlaceCardAtClientRpc(cardID, playerHand.gameObject);
@@ -535,6 +537,9 @@ public class WOEGameManager : NetworkBehaviour
             // Place the card in the enemy hand instead
             PlaceCardAtClientRpc(cardID, enemyHand.gameObject);
         }
+
+        // At last, we return the card to the original sibling index
+        cardNetworkObject.transform.SetSiblingIndex(cardNetworkObject.GetComponent<DragDrop>().cardOrderInHand);
     }
     // ******************* Update card position (Player's hand) *******************
 

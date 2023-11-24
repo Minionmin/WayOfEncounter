@@ -22,6 +22,10 @@ public class DragDrop : NetworkBehaviour
     // This gameobject's CardTemplate component
     private CardTemplate cardTemplate;
 
+    // Card order in the hand and dropzone container
+    public int cardOrderInHand { get; private set; }
+    public int cardOrderInDropZone { get; private set; }
+
     private bool isDragging = false;
     private bool isDroppable = false;
     private Transform startParent = null;
@@ -89,7 +93,17 @@ public class DragDrop : NetworkBehaviour
         {
             startParent = transform.parent;
         }
-        
+
+        // Remember our original position
+        if (transform.parent == WOEGameManager.Instance.playerHand) 
+        {
+            cardOrderInHand = transform.GetSiblingIndex();
+        }
+        else if(transform.parent == WOEGameManager.Instance.dropZoneContainer)
+        {
+            cardOrderInDropZone = transform.GetSiblingIndex();
+        }
+
         // Start Drag() function
         isDragging = true;
     }
@@ -115,6 +129,7 @@ public class DragDrop : NetworkBehaviour
 
         // Reset isDragging
         isDragging = false;
+
         // Also return if the card is in the dropzone and it is not player's turn
         if (WOEGameManager.Instance.IsInDropZoneContainer(transform) && !WOEGameManager.Instance.IsPlayerTurn()) return;
 
@@ -129,6 +144,7 @@ public class DragDrop : NetworkBehaviour
         else
         {
             // Return/Update card position based on OwnerID
+            // and rearrange the card based on original children order
             WOEGameManager.Instance.Notify_ReturnCardToPlayerServerRpc(cardTemplate.cardNetworkID.Value);
         }
     }
