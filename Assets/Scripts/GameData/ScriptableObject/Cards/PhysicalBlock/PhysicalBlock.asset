@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 511a4d08a6a7ec04e9643b2f7abe01e6, type: 3}
-  m_Name: MA7
+  m_Name: PhysicalBlock
   m_EditorClassIdentifier: 
-  cardName: Magical Attack[7]
-  cardDescription: Attack your opponent by 7 magical damage
-  cardType: 1
-  value: 7
-  cardSprite: {fileID: 21300000, guid: 773c23c4058890948b3bfeb619090643, type: 3}
+  cardName: Physical Block
+  cardDescription: Block incoming physical block
+  cardType: 2
+  value: 0
+  cardSprite: {fileID: 21300000, guid: ca7e87531887b0242affd69efcfc30ff, type: 3}

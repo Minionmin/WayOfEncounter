@@ -77,10 +77,19 @@ public class PlayerNetwork : NetworkBehaviour
         }
         */
 
-        if (Input.GetKeyUp(KeyCode.D))
+        if(Input.GetKeyUp(KeyCode.Q))
         {
-            // Press D to draw a card
-            WOEGameManager.Instance.Notify_DrawServerRpc(new ServerRpcParams());
+            WOEGameManager.Instance.Notify_ChangeStateToServerRpc(WOEGameManager.GameState.HostTurn);
+        }
+
+        if (Input.GetKeyUp(KeyCode.E))
+        {
+            WOEGameManager.Instance.Notify_ChangeStateToServerRpc(WOEGameManager.GameState.ClientTurn);
+        }
+
+        if (Input.GetKeyUp(KeyCode.R))
+        {
+            WOEGameManager.Instance.Notify_ChangeStateToServerRpc(WOEGameManager.GameState.ProcessTurn);
         }
     }
 
@@ -97,6 +106,16 @@ public class PlayerNetwork : NetworkBehaviour
     public ulong GetPlayerNetworkID()
     {
         return playerNetworkID.Value;
+    }
+
+    public int SetPlayerMaxHP(int val)
+    {
+        return playerMaxHP.Value = val;
+    }
+
+    public int SetPlayerHP(int val)
+    {
+        return playerHP.Value = val;
     }
 
     /*

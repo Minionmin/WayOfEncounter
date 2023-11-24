@@ -270,6 +270,11 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 951099334
       objectReference: {fileID: 0}
+    - target: {fileID: 4695183511850124260, guid: f921e6332e7fa604ab147ae327f5aef6,
+        type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 951099334
+      objectReference: {fileID: 0}
     - target: {fileID: 5071224543444307677, guid: f921e6332e7fa604ab147ae327f5aef6,
         type: 3}
       propertyPath: m_Name
@@ -557,6 +562,11 @@ PrefabInstance:
         type: 3}
       propertyPath: GlobalObjectIdHash
       value: 951099334
+      objectReference: {fileID: 0}
+    - target: {fileID: -5001095162606256437, guid: 753a8e5bfe0440a4dbf2abac048e43a3,
+        type: 3}
+      propertyPath: AutoObjectParentSync
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 59918425512849181, guid: 753a8e5bfe0440a4dbf2abac048e43a3,
         type: 3}

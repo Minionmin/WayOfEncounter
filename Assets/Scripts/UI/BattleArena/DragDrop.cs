@@ -5,24 +5,32 @@
  * 
  *  製作者：Phansuwan Chaichumphon （ミン）
  * 
+ * Todo: Make player not able to drop card in the zone when it's not their turn
  **********************************************/
 
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class DragDrop : NetworkBehaviour
 {
-    /// <summary> Card's network ID that will be used to get player reference in WOEGameManager.cs </summary>
-    public NetworkVariable<ulong> cardNetworkID = new NetworkVariable<ulong>(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-
     // Prevent mistyping in the future
     private const string DROPZONE_TAG = "DropZone";
+
+    // This gameobject's CardTemplate component
+    private CardTemplate cardTemplate;
 
     private bool isDragging = false;
     private bool isDroppable = false;
     private Transform startParent = null;
+
+    private void Awake()
+    {
+        // Get this gameobject's CardTemplate component
+        cardTemplate = GetComponent<CardTemplate>();
+    }
 
     private void Update()
     {
@@ -64,7 +72,7 @@ public class DragDrop : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        cardNetworkID.Value = gameObject.GetComponent<NetworkObject>().NetworkObjectId;
+        cardTemplate.cardNetworkID.Value = gameObject.GetComponent<NetworkObject>().NetworkObjectId;
     }
 
     // Being called at CardTemplate prefab EventTrigger on Start Drag
@@ -72,6 +80,9 @@ public class DragDrop : NetworkBehaviour
     {
         // Return if not owning the card
         if (!IsOwner) return;
+
+        // Also return if the card is in the dropzone and it is not player's turn
+        if (WOEGameManager.Instance.IsInDropZoneContainer(transform) && !WOEGameManager.Instance.IsPlayerTurn()) return;
 
         // Set start parent/position in case we want to return the card to it's original place
         if (!startParent)
@@ -104,18 +115,21 @@ public class DragDrop : NetworkBehaviour
 
         // Reset isDragging
         isDragging = false;
-        
+        // Also return if the card is in the dropzone and it is not player's turn
+        if (WOEGameManager.Instance.IsInDropZoneContainer(transform) && !WOEGameManager.Instance.IsPlayerTurn()) return;
+
         // If the card is over the drop zone
-        if(isDroppable)
+        // AND IF IT IS PLAYER'S TURN
+        if (isDroppable && WOEGameManager.Instance.IsPlayerTurn())
         {
             // If we can drop the card in the dropzone, then update the card position in both clients
-            WOEGameManager.Instance.Notify_PlaceCardAtServerRpc(cardNetworkID.Value, WOEGameManager.Instance.dropZoneContainer.gameObject);
+            WOEGameManager.Instance.Notify_PlaceCardAtServerRpc(cardTemplate.cardNetworkID.Value, WOEGameManager.Instance.dropZoneContainer.gameObject);
         }
         // If the card is not in the drop zone
         else
         {
             // Return/Update card position based on OwnerID
-            WOEGameManager.Instance.Notify_ReturnCardToPlayerServerRpc(cardNetworkID.Value);
+            WOEGameManager.Instance.Notify_ReturnCardToPlayerServerRpc(cardTemplate.cardNetworkID.Value);
         }
     }
 }
